@@ -1,22 +1,29 @@
 package com.futurex.services.FutureXCourseCatalog;
 
-import java.math.BigInteger;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Course {
 
-    private BigInteger courseid;
+    private Long courseid;
     private String coursename;
     private String author;
 
     public Course() {
     }
 
-    public BigInteger getCourseid() {
+    public Course(Long courseid, String coursename, String author) {
+        this.courseid = courseid;
+        this.coursename = coursename;
+        this.author = author;
+    }
 
+    // Getters and setters
+    public Long getCourseid() {
         return courseid;
     }
 
-    public void setCourseid(BigInteger courseid) {
+    public void setCourseid(Long courseid) {
         this.courseid = courseid;
     }
 
@@ -35,8 +42,4 @@ public class Course {
     public void setAuthor(String author) {
         this.author = author;
     }
-
-
-
-
 }

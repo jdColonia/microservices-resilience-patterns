@@ -1,55 +1,44 @@
 package com.futurex.services.FutureXCourseCatalog;
 
-import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.EurekaClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
+
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 public class CatalogController {
 
     @Autowired
-    private EurekaClient client;
+    private CourseService courseService;
 
     @RequestMapping("/")
-    public String getCatalogHome() {
-        String courseAppMesage = "";
-        //String courseAppURL = "http://localhost:8080/";
-        RestTemplate restTemplate = new RestTemplate();
-        InstanceInfo instanceInfo = client.getNextServerFromEureka("fx-course-service",false);
-        String courseAppURL = instanceInfo.getHomePageUrl();
-        courseAppMesage = restTemplate.getForObject(courseAppURL,String.class);
-
-        return("Welcome to FutureX Course Catalog "+courseAppMesage);
+    public CompletableFuture<String> getCatalogHome() {
+        return courseService.getCourseAppHome()
+                .thenApply(courseAppMessage -> "Welcome to FutureX Course Catalog " + courseAppMessage);
     }
 
     @RequestMapping("/catalog")
-    public String getCatalog() {
-        String courses = "";
-        //String courseAppURL = "http://localhost:8080/courses";
-        InstanceInfo instanceInfo = client.getNextServerFromEureka("fx-course-service",false);
-        String courseAppURL = instanceInfo.getHomePageUrl();
-        courseAppURL = courseAppURL+"/courses";
-        RestTemplate restTemplate = new RestTemplate();
-        courses = restTemplate.getForObject(courseAppURL,String.class);
-
-        return("Our courses are "+courses);
+    public CompletableFuture<String> getCatalog() {
+        return courseService.getCourses()
+                .thenApply(courses -> "Our courses are " + courses);
     }
 
     @RequestMapping("/firstcourse")
-    public String getSpecificCourse() {
-        Course course = new Course();
-        //String courseAppURL = "http://localhost:8080/1";
-        InstanceInfo instanceInfo = client.getNextServerFromEureka("fx-course-service",false);
-        String courseAppURL = instanceInfo.getHomePageUrl();
-        courseAppURL = courseAppURL+"/1";
-        RestTemplate restTemplate = new RestTemplate();
-
-        course = restTemplate.getForObject(courseAppURL,Course.class);
-
-        return("Our first course is "+course.getCoursename());
+    public CompletableFuture<String> getSpecificCourse() {
+        return courseService.getSpecificCourse(1L)
+                .thenApply(courseName -> "Our first course is " + courseName);
     }
 
+    @RequestMapping("/course/{id}")
+    public CompletableFuture<String> getCourseById(@PathVariable("id") Long id) {
+        return courseService.getSpecificCourse(id)
+                .thenApply(courseName -> "Course " + id + " is " + courseName);
+    }
+
+    @RequestMapping("/health")
+    public String health() {
+        return "Catalog service is healthy";
+    }
 }
