@@ -39,7 +39,6 @@ public class ResilientCourseService {
                             String courseAppURL = instanceInfo.getHomePageUrl();
                             return restTemplate.getForObject(courseAppURL, String.class);
                         } catch (Exception e) {
-                            // Cualquier excepción, incluyendo ConnectException, será manejada por el Circuit Breaker
                             throw new RuntimeException("Error al obtener información del servicio de cursos: " + e.getMessage(), e);
                         }
                     }).get();
@@ -66,7 +65,6 @@ public class ResilientCourseService {
                             String courseAppURL = instanceInfo.getHomePageUrl() + "/courses";
                             return restTemplate.getForObject(courseAppURL, String.class);
                         } catch (Exception e) {
-                            // Cualquier excepción, incluyendo ConnectException, será manejada por el Circuit Breaker
                             throw new RuntimeException("Error al obtener la lista de cursos: " + e.getMessage(), e);
                         }
                     }).get();
@@ -76,7 +74,7 @@ public class ResilientCourseService {
             try {
                 return decoratedSupplier.get();
             } catch (Exception e) {
-                return "[]"; // Lista vacía como fallback
+                return "[]";
             }
         });
     }
@@ -94,7 +92,6 @@ public class ResilientCourseService {
                             Course course = restTemplate.getForObject(courseAppURL, Course.class);
                             return course != null ? course.getCoursename() : "Curso no encontrado";
                         } catch (Exception e) {
-                            // Cualquier excepción, incluyendo ConnectException, será manejada por el Circuit Breaker
                             throw new RuntimeException("Error al obtener el curso específico: " + e.getMessage(), e);
                         }
                     }).get();

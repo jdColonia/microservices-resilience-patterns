@@ -29,7 +29,6 @@ public class CourseService {
                 String courseAppURL = instanceInfo.getHomePageUrl();
                 return restTemplate.getForObject(courseAppURL, String.class);
             } catch (Exception e) {
-                // Cualquier excepción, incluyendo ConnectException, será manejada por el Circuit Breaker
                 throw new RuntimeException("Error al obtener información del servicio de cursos: " + e.getMessage(), e);
             }
         });
@@ -45,7 +44,6 @@ public class CourseService {
                 String courseAppURL = instanceInfo.getHomePageUrl() + "/courses";
                 return restTemplate.getForObject(courseAppURL, String.class);
             } catch (Exception e) {
-                // Cualquier excepción, incluyendo ConnectException, será manejada por el Circuit Breaker
                 throw new RuntimeException("Error al obtener la lista de cursos: " + e.getMessage(), e);
             }
         });
@@ -62,7 +60,6 @@ public class CourseService {
                 Course course = restTemplate.getForObject(courseAppURL, Course.class);
                 return course != null ? course.getCoursename() : "Curso no encontrado";
             } catch (Exception e) {
-                // Cualquier excepción, incluyendo ConnectException, será manejada por el Circuit Breaker
                 throw new RuntimeException("Error al obtener el curso específico: " + e.getMessage(), e);
             }
         });
@@ -74,7 +71,7 @@ public class CourseService {
     }
 
     public CompletableFuture<String> getCoursesFallback(Exception ex) {
-        return CompletableFuture.completedFuture("[]"); // Lista vacía como fallback
+        return CompletableFuture.completedFuture("[]");
     }
 
     public CompletableFuture<String> getSpecificCourseFallback(Exception ex) {
