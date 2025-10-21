@@ -1,0 +1,48 @@
+services:
+  eureka-server:
+    build:
+      context: .
+      dockerfile: ./FutureXEurekaServer/Dockerfile
+    container_name: eureka-server
+    ports:
+      - '8761:8761'
+    networks:
+      - microservices-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  course-app:
+    build:
+      context: .
+      dockerfile: ./FutureXCourseApp/Dockerfile
+    container_name: course-app
+    ports:
+      - '8001:8001'
+    networks:
+      - microservices-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+    restart: on-failure
+
+  course-catalog:
+    build:
+      context: .
+      dockerfile: ./FutureXCourseCatalog/Dockerfile
+    container_name: course-catalog
+    ports:
+      - '8002:8002'
+    networks:
+      - microservices-network
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+    restart: on-failure
+
+networks:
+  microservices-network:
+    driver: bridge
