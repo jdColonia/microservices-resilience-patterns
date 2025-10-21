@@ -11,29 +11,29 @@ import java.util.concurrent.CompletableFuture;
 public class CatalogController {
 
     @Autowired
-    private CourseService courseService;
+    private ResilientCourseService resilientCourseService;
 
     @RequestMapping("/")
     public CompletableFuture<String> getCatalogHome() {
-        return courseService.getCourseAppHome()
+        return resilientCourseService.getCourseAppHome()
                 .thenApply(courseAppMessage -> "Welcome to FutureX Course Catalog " + courseAppMessage);
     }
 
     @RequestMapping("/catalog")
     public CompletableFuture<String> getCatalog() {
-        return courseService.getCourses()
+        return resilientCourseService.getCourses()
                 .thenApply(courses -> "Our courses are " + courses);
     }
 
     @RequestMapping("/firstcourse")
     public CompletableFuture<String> getSpecificCourse() {
-        return courseService.getSpecificCourse(1L)
+        return resilientCourseService.getSpecificCourse(1L)
                 .thenApply(courseName -> "Our first course is " + courseName);
     }
 
     @RequestMapping("/course/{id}")
     public CompletableFuture<String> getCourseById(@PathVariable("id") Long id) {
-        return courseService.getSpecificCourse(id)
+        return resilientCourseService.getSpecificCourse(id)
                 .thenApply(courseName -> "Course " + id + " is " + courseName);
     }
 
