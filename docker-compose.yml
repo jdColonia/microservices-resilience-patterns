@@ -1,11 +1,99 @@
 services:
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686" # Web UI
+      - "14250:14250" # gRPC for Jaeger-to-Jaeger communication
+      - "4317:4317" # OTLP gRPC receiver
+      - "4318:4318" # OTLP HTTP receiver
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - microservices-network
+
+  otel-collector:
+    image: otel/opentelemetry-collector:0.88.0
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4319:4317" # OTLP gRPC receiver
+      - "4320:4318" # OTLP HTTP receiver
+    depends_on:
+      - jaeger
+    networks:
+      - microservices-network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - microservices-network
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: logstash
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    ports:
+      - "5000:5000/tcp"
+      - "5044:5044"
+      - "9600:9600"
+    environment:
+      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
+      - "xpack.monitoring.enabled=false"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - xpack.security.enabled=false
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   eureka-server:
     build:
       context: .
       dockerfile: ./FutureXEurekaServer/Dockerfile
     container_name: eureka-server
     ports:
-      - '8761:8761'
+      - "8761:8761"
     networks:
       - microservices-network
     environment:
@@ -17,14 +105,20 @@ services:
       dockerfile: ./FutureXCourseApp/Dockerfile
     container_name: course-app
     ports:
-      - '8001:8001'
+      - "8001:8001"
     networks:
       - microservices-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5000
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
     depends_on:
       - eureka-server
+      - logstash
+      - otel-collector
     restart: on-failure
 
   course-catalog:
@@ -33,16 +127,26 @@ services:
       dockerfile: ./FutureXCourseCatalog/Dockerfile
     container_name: course-catalog
     ports:
-      - '8002:8002'
+      - "8002:8002"
     networks:
       - microservices-network
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - LOGSTASH_HOST=logstash
+      - LOGSTASH_PORT=5000
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
     depends_on:
       - eureka-server
+      - logstash
+      - otel-collector
     restart: on-failure
 
 networks:
   microservices-network:
     driver: bridge
+
+volumes:
+  elasticsearch-data:
+    driver: local
