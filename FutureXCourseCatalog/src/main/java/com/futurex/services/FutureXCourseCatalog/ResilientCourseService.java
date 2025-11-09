@@ -49,7 +49,6 @@ public class ResilientCourseService {
                             return result;
                         } catch (Exception e) {
                             logger.error("Error al obtener información del servicio de cursos: {}", e.getMessage(), e);
-                            // Cualquier excepción, incluyendo ConnectException, será manejada por el Circuit Breaker
                             throw new RuntimeException("Error al obtener información del servicio de cursos: " + e.getMessage(), e);
                         }
                     }).get();
@@ -86,7 +85,6 @@ public class ResilientCourseService {
                             return result;
                         } catch (Exception e) {
                             logger.error("Error al obtener la lista de cursos: {}", e.getMessage(), e);
-                            // Cualquier excepción, incluyendo ConnectException, será manejada por el Circuit Breaker
                             throw new RuntimeException("Error al obtener la lista de cursos: " + e.getMessage(), e);
                         }
                     }).get();
@@ -100,7 +98,7 @@ public class ResilientCourseService {
             } catch (Exception e) {
                 logger.error("Circuit breaker failed or service unavailable for getCourses: {}", e.getMessage(), e);
                 logger.warn("Circuit breaker state: {}", circuitBreaker.getState());
-                return "[]"; // Lista vacía como fallback
+                return "[]";
             }
         });
     }
@@ -128,7 +126,6 @@ public class ResilientCourseService {
                             }
                         } catch (Exception e) {
                             logger.error("Error al obtener el curso específico {}: {}", courseId, e.getMessage(), e);
-                            // Cualquier excepción, incluyendo ConnectException, será manejada por el Circuit Breaker
                             throw new RuntimeException("Error al obtener el curso específico: " + e.getMessage(), e);
                         }
                     }).get();
